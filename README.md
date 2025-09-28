@@ -16,10 +16,9 @@ This app helps students calculate their current attendance percentage, track sub
 ---
 
 ## 🛠️ Tech Stack
-- **Frontend**: React Native / Flutter / Android (depending on your build)  
-- **Backend**: Firebase / Node.js / Local Storage (as per your setup)  
-- **Database**: Firestore / SQLite / MySQL (customizable)  
-
+- **Frontend:** HTML5, CSS3, JavaScript (Vanilla)  
+- **Charts & Visualization:** [Chart.js](https://www.chartjs.org/)  
+- **Data Storage:** Browser LocalStorage
 ---
 
 ## 📖 How It Works
