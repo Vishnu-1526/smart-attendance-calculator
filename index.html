@@ -1,509 +1,1084 @@
-import React, { useState, useEffect } from 'react';
-import { Upload, Download, Plus, Edit2, Trash2, Check, X, Save } from 'lucide-react';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Calculator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        .main-content {
+            padding: 30px;
+        }
+        .tabs {
+            display: flex;
+            border-bottom: 3px solid #f0f0f0;
+            margin-bottom: 30px;
+        }
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            background: #f8f9fa;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .tab.active {
+            background: #4CAF50;
+            color: white;
+            transform: translateY(-2px);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+        .btn {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.3s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(76, 175, 80, 0.3);
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+        }
+        .btn-warning {
+            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+        }
+        .subjects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .subject-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        .subject-card:hover {
+            transform: translateY(-5px);
+        }
+        .subject-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .subject-name {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #333;
+        }
+        .attendance-percentage {
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        .safe { background: #d4edda; color: #155724; }
+        .warning { background: #fff3cd; color: #856404; }
+        .danger { background: #f8d7da; color: #721c24; }
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        .safe .progress-fill { background: linear-gradient(90deg, #4CAF50, #8BC34A); }
+        .warning .progress-fill { background: linear-gradient(90deg, #FF9800, #FFC107); }
+        .danger .progress-fill { background: linear-gradient(90deg, #F44336, #E91E63); }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-left: 5px solid #4CAF50;
+        }
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+        }
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin: 20px 0;
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .predictions {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .prediction-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .prediction-item:last-child {
+            border-bottom: none;
+        }
+        .alert {
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            font-weight: 600;
+        }
+        .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .alert-danger { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 90%;
+        }
+        .close {
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #999;
+        }
+        .close:hover {
+            color: #000;
+        }
+        @media (max-width: 768px) {
+            .subjects-grid {
+                grid-template-columns: 1fr;
+            }
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .tabs {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 Smart Attendance Calculator</h1>
+            <p>Track, Predict & Maintain Your Academic Attendance</p>
+        </div>
+        
+        <div class="main-content">
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('dashboard')">📊 Dashboard</button>
+                <button class="tab" onclick="showTab('subjects')">📖 Subjects</button>
+                <button class="tab" onclick="showTab('predictions')">🔮 Predictions</button>
+                <button class="tab" onclick="showTab('analytics')">📈 Analytics</button>
+                <button class="tab" onclick="showTab('profile')">👤 Profile</button>
+            </div>
 
-const AttendanceTracker = () => {
-  const [subjects, setSubjects] = useState([]);
-  const [profile, setProfile] = useState({
-    name: '',
-    rollNumber: '',
-    course: '',
-    semester: '',
-    minAttendance: 75
-  });
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editingSubject, setEditingSubject] = useState(null);
+            <!-- Dashboard Tab -->
+            <div id="dashboard" class="tab-content active">
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-number" id="overallAttendance">0%</div>
+                        <div class="stat-label">Overall Attendance</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalSubjects">0</div>
+                        <div class="stat-label">Total Subjects</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="safeSubjects">0</div>
+                        <div class="stat-label">Safe Subjects</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="riskSubjects">0</div>
+                        <div class="stat-label">At Risk Subjects</div>
+                    </div>
+                </div>
 
-  useEffect(() => {
-    const savedSubjects = localStorage.getItem('subjects');
-    const savedProfile = localStorage.getItem('profile');
-    if (savedSubjects) setSubjects(JSON.parse(savedSubjects));
-    if (savedProfile) setProfile(JSON.parse(savedProfile));
-  }, []);
+                <div class="subjects-grid" id="subjectsOverview"></div>
+                <div id="alertsContainer"></div>
+            </div>
 
-  useEffect(() => {
-    localStorage.setItem('subjects', JSON.stringify(subjects));
-    localStorage.setItem('profile', JSON.stringify(profile));
-  }, [subjects, profile]);
+            <!-- Subjects Tab -->
+            <div id="subjects" class="tab-content">
+                <div class="form-group">
+                    <button class="btn" onclick="showAddSubjectModal()">➕ Add New Subject</button>
+                    <input type="file" id="subjectImageUpload" accept="image/*" style="display:none;" onchange="handleImageUpload(event)">
+                    <button class="btn btn-warning" onclick="triggerImageUpload()" style="margin-left:10px;">📷 Import from Image</button>
+                </div>
+                <div class="subjects-grid" id="subjectsManagement"></div>
+            </div>
 
-  const handleExcelImport = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+            <!-- Predictions Tab -->
+            <div id="predictions" class="tab-content">
+                <h3>📊 Attendance Predictions</h3>
+                <div class="predictions" id="predictionsContainer"></div>
+            </div>
 
-    try {
-      const XLSX = await import('https://cdn.sheetjs.com/xlsx-0.20.0/package/xlsx.mjs');
-      const reader = new FileReader();
-      
-      reader.onload = (e) => {
-        try {
-          const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: 'array' });
-          const sheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[sheetName];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet);
+            <!-- Analytics Tab -->
+            <div id="analytics" class="tab-content">
+                <h3>📈 Attendance Analytics</h3>
+                <div class="chart-container">
+                    <canvas id="attendanceChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
 
-          if (jsonData.length === 0) {
-            alert('Empty Excel file');
-            return;
-          }
+            <!-- Profile Tab -->
+            <div id="profile" class="tab-content">
+                <h3>👤 Student Profile</h3>
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" id="studentName" placeholder="Enter your name">
+                </div>
+                <div class="form-group">
+                    <label>Roll Number</label>
+                    <input type="text" id="rollNumber" placeholder="Enter your roll number">
+                </div>
+                <div class="form-group">
+                    <label>Course</label>
+                    <input type="text" id="course" placeholder="Enter your course">
+                </div>
+                <div class="form-group">
+                    <label>Semester</label>
+                    <select id="semester">
+                        <option value="">Select Semester</option>
+                        <option value="1">1st Semester</option>
+                        <option value="2">2nd Semester</option>
+                        <option value="3">3rd Semester</option>
+                        <option value="4">4th Semester</option>
+                        <option value="5">5th Semester</option>
+                        <option value="6">6th Semester</option>
+                        <option value="7">7th Semester</option>
+                        <option value="8">8th Semester</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Minimum Attendance Required (%)</label>
+                    <input type="number" id="minAttendance" value="75" min="0" max="100">
+                </div>
+                <button class="btn" onclick="saveProfile()">💾 Save Profile</button>
+                <button class="btn btn-warning" onclick="exportData()" style="margin-left: 10px;">📤 Export Data</button>
+                <button class="btn btn-danger" onclick="clearAllData()" style="margin-left: 10px;">🗑️ Clear All Data</button>
+            </div>
+        </div>
+    </div>
 
-          const firstRow = jsonData[0];
-          const keys = Object.keys(firstRow);
-          
-          const findColumn = (possibleNames) => {
-            return keys.find(key => 
-              possibleNames.some(name => 
-                key.toLowerCase().includes(name.toLowerCase())
-              )
-            );
-          };
+    <!-- Add Subject Modal -->
+    <div id="addSubjectModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('addSubjectModal')">&times;</span>
+            <h3>➕ Add New Subject</h3>
+            <div class="form-group">
+                <label>Subject Name</label>
+                <input type="text" id="newSubjectName" placeholder="e.g., Mathematics">
+            </div>
+            <div class="form-group">
+                <label>Subject Code</label>
+                <input type="text" id="newSubjectCode" placeholder="e.g., MATH101">
+            </div>
+            <div class="form-group">
+                <label>Total Classes Conducted</label>
+                <input type="number" id="newTotalClasses" value="0" min="0">
+            </div>
+            <div class="form-group">
+                <label>Classes Attended</label>
+                <input type="number" id="newAttendedClasses" value="0" min="0">
+            </div>
+            <button class="btn" onclick="addSubject()">✅ Add Subject</button>
+        </div>
+    </div>
 
-          const nameCol = findColumn(['subject', 'name', 'course name', 'subject name']);
-          const codeCol = findColumn(['code', 'course code', 'subject code']);
-          const attendedCol = findColumn(['attended', 'present', 'classes attended']);
-          const totalCol = findColumn(['total', 'conducted', 'total classes']);
-          const absentCol = findColumn(['absent', 'missed']);
+    <!-- Edit Subject Modal -->
+    <div id="editSubjectModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('editSubjectModal')">&times;</span>
+            <h3>✏️ Edit Subject</h3>
+            <input type="hidden" id="editSubjectId">
+            <div class="form-group">
+                <label>Subject Name</label>
+                <input type="text" id="editSubjectName">
+            </div>
+            <div class="form-group">
+                <label>Subject Code</label>
+                <input type="text" id="editSubjectCode">
+            </div>
+            <div class="form-group">
+                <label>Total Classes Conducted</label>
+                <input type="number" id="editTotalClasses" min="0">
+            </div>
+            <div class="form-group">
+                <label>Classes Attended</label>
+                <input type="number" id="editAttendedClasses" min="0">
+            </div>
+            <button class="btn" onclick="updateSubject()">💾 Update Subject</button>
+            <button class="btn btn-danger" onclick="deleteSubject()" style="margin-left: 10px;">🗑️ Delete Subject</button>
+        </div>
+    </div>
 
-          if (!nameCol) {
-            alert('Could not find subject/course name column');
-            return;
-          }
+    <script>
+        // Data Storage
+        let subjects = JSON.parse(localStorage.getItem('subjects')) || [];
+        let profile = JSON.parse(localStorage.getItem('profile')) || {
+            name: '',
+            rollNumber: '',
+            course: '',
+            semester: '',
+            minAttendance: 75
+        };
 
-          const importedSubjects = jsonData.map((row, index) => {
-            const name = row[nameCol] || `Subject ${index + 1}`;
-            const code = codeCol ? (row[codeCol] || `CODE${index + 1}`) : `CODE${index + 1}`;
-            
-            let attended = 0;
-            let total = 0;
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', function() {
+            loadProfile();
+            updateDashboard();
+            updateSubjectsManagement();
+            updatePredictions();
+            updateAnalytics();
+            checkAttendanceAlerts();
+        });
 
-            if (attendedCol && totalCol) {
-              attended = parseInt(row[attendedCol]) || 0;
-              total = parseInt(row[totalCol]) || 0;
-            } else if (attendedCol && absentCol) {
-              attended = parseInt(row[attendedCol]) || 0;
-              const absent = parseInt(row[absentCol]) || 0;
-              total = attended + absent;
-            } else if (totalCol && absentCol) {
-              total = parseInt(row[totalCol]) || 0;
-              const absent = parseInt(row[absentCol]) || 0;
-              attended = total - absent;
+        // Tab Management
+        function showTab(tabName) {
+            // Hide all tab contents
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(content => content.classList.remove('active'));
+
+            // Remove active class from all tabs
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            // Update analytics when analytics tab is shown
+            if (tabName === 'analytics') {
+                setTimeout(updateAnalytics, 100);
+            }
+        }
+
+        // Profile Management
+        function loadProfile() {
+            document.getElementById('studentName').value = profile.name;
+            document.getElementById('rollNumber').value = profile.rollNumber;
+            document.getElementById('course').value = profile.course;
+            document.getElementById('semester').value = profile.semester;
+            document.getElementById('minAttendance').value = profile.minAttendance;
+        }
+
+        function saveProfile() {
+            profile = {
+                name: document.getElementById('studentName').value,
+                rollNumber: document.getElementById('rollNumber').value,
+                course: document.getElementById('course').value,
+                semester: document.getElementById('semester').value,
+                minAttendance: parseInt(document.getElementById('minAttendance').value)
+            };
+            localStorage.setItem('profile', JSON.stringify(profile));
+            alert('✅ Profile saved successfully!');
+            updateDashboard();
+            checkAttendanceAlerts();
+        }
+
+        // Subject Management
+        function showAddSubjectModal() {
+            document.getElementById('addSubjectModal').style.display = 'block';
+        }
+
+        function addSubject() {
+            const name = document.getElementById('newSubjectName').value;
+            const code = document.getElementById('newSubjectCode').value;
+            const totalClasses = parseInt(document.getElementById('newTotalClasses').value);
+            const attendedClasses = parseInt(document.getElementById('newAttendedClasses').value);
+
+            if (!name || !code) {
+                alert('⚠️ Please fill in all required fields');
+                return;
             }
 
-            return {
-              id: Date.now() + index + Math.random(),
-              name: String(name),
-              code: String(code),
-              totalClasses: total,
-              attendedClasses: Math.min(attended, total),
-              history: [{
-                date: new Date().toISOString().split('T')[0],
-                totalClasses: total,
-                attendedClasses: Math.min(attended, total)
-              }]
+            if (attendedClasses > totalClasses) {
+                alert('⚠️ Attended classes cannot exceed total classes');
+                return;
+            }
+
+            const subject = {
+                id: Date.now(),
+                name,
+                code,
+                totalClasses,
+                attendedClasses,
+                history: [{
+                    date: new Date().toISOString().split('T')[0],
+                    totalClasses,
+                    attendedClasses
+                }]
             };
-          });
 
-          setSubjects(prev => [...prev, ...importedSubjects]);
-          alert(`Successfully imported ${importedSubjects.length} subjects!`);
-        } catch (error) {
-          alert('Error processing Excel file: ' + error.message);
+            subjects.push(subject);
+            saveSubjects();
+            closeModal('addSubjectModal');
+            clearAddSubjectForm();
+            updateDashboard();
+            updateSubjectsManagement();
+            updatePredictions();
+            updateAnalytics();
+            checkAttendanceAlerts();
         }
-      };
-      
-      reader.readAsArrayBuffer(file);
-      event.target.value = '';
-    } catch (error) {
-      alert('Error loading Excel library: ' + error.message);
-    }
-  };
 
-  const handleExcelExport = async () => {
-    try {
-      const XLSX = await import('https://cdn.sheetjs.com/xlsx-0.20.0/package/xlsx.mjs');
-      
-      const exportData = subjects.map(s => ({
-        'Subject Name': s.name,
-        'Subject Code': s.code,
-        'Total Classes': s.totalClasses,
-        'Classes Attended': s.attendedClasses,
-        'Classes Absent': s.totalClasses - s.attendedClasses,
-        'Attendance %': s.totalClasses > 0 ? ((s.attendedClasses / s.totalClasses) * 100).toFixed(2) : '0.00'
-      }));
+        function editSubject(subjectId) {
+            const subject = subjects.find(s => s.id === subjectId);
+            if (!subject) return;
 
-      const ws = XLSX.utils.json_to_sheet(exportData);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Attendance');
-      XLSX.writeFile(wb, `attendance_${profile.rollNumber || 'export'}.xlsx`);
-    } catch (error) {
-      alert('Error exporting to Excel: ' + error.message);
-    }
-  };
+            document.getElementById('editSubjectId').value = subject.id;
+            document.getElementById('editSubjectName').value = subject.name;
+            document.getElementById('editSubjectCode').value = subject.code;
+            document.getElementById('editTotalClasses').value = subject.totalClasses;
+            document.getElementById('editAttendedClasses').value = subject.attendedClasses;
+            document.getElementById('editSubjectModal').style.display = 'block';
+        }
 
-  const calculateStats = () => {
-    const total = subjects.reduce((sum, s) => sum + s.totalClasses, 0);
-    const attended = subjects.reduce((sum, s) => sum + s.attendedClasses, 0);
-    const overall = total > 0 ? (attended / total) * 100 : 0;
-    const safe = subjects.filter(s => s.totalClasses > 0 && (s.attendedClasses / s.totalClasses * 100) >= profile.minAttendance).length;
-    const risk = subjects.length - safe;
-    return { overall, safe, risk };
-  };
+        function updateSubject() {
+            const id = parseInt(document.getElementById('editSubjectId').value);
+            const name = document.getElementById('editSubjectName').value;
+            const code = document.getElementById('editSubjectCode').value;
+            const totalClasses = parseInt(document.getElementById('editTotalClasses').value);
+            const attendedClasses = parseInt(document.getElementById('editAttendedClasses').value);
 
-  const stats = calculateStats();
+            if (!name || !code) {
+                alert('⚠️ Please fill in all required fields');
+                return;
+            }
 
-  const addSubject = (newSubject) => {
-    setSubjects(prev => [...prev, {
-      ...newSubject,
-      id: Date.now() + Math.random(),
-      history: [{
-        date: new Date().toISOString().split('T')[0],
-        totalClasses: newSubject.totalClasses,
-        attendedClasses: newSubject.attendedClasses
-      }]
-    }]);
-    setShowAddModal(false);
-  };
+            if (attendedClasses > totalClasses) {
+                alert('⚠️ Attended classes cannot exceed total classes');
+                return;
+            }
 
-  const updateSubject = (updatedSubject) => {
-    setSubjects(prev => prev.map(s => 
-      s.id === updatedSubject.id 
-        ? { 
-            ...updatedSubject,
-            history: [...(s.history || []), {
-              date: new Date().toISOString().split('T')[0],
-              totalClasses: updatedSubject.totalClasses,
-              attendedClasses: updatedSubject.attendedClasses
-            }]
-          }
-        : s
-    ));
-    setShowEditModal(false);
-    setEditingSubject(null);
-  };
+            const subjectIndex = subjects.findIndex(s => s.id === id);
+            if (subjectIndex !== -1) {
+                subjects[subjectIndex] = {
+                    ...subjects[subjectIndex],
+                    name,
+                    code,
+                    totalClasses,
+                    attendedClasses
+                };
+                // Add to history if values changed
+                const lastHistory = subjects[subjectIndex].history[subjects[subjectIndex].history.length - 1];
+                if (lastHistory.totalClasses !== totalClasses || lastHistory.attendedClasses !== attendedClasses) {
+                    subjects[subjectIndex].history.push({
+                        date: new Date().toISOString().split('T')[0],
+                        totalClasses,
+                        attendedClasses
+                    });
+                }
+            }
 
-  const deleteSubject = (id) => {
-    if (window.confirm('Delete this subject?')) {
-      setSubjects(prev => prev.filter(s => s.id !== id));
-    }
-  };
+            saveSubjects();
+            closeModal('editSubjectModal');
+            updateDashboard();
+            updateSubjectsManagement();
+            updatePredictions();
+            updateAnalytics();
+            checkAttendanceAlerts();
+        }
 
-  const markAttendance = (id, present) => {
-    setSubjects(prev => prev.map(s => {
-      if (s.id === id) {
-        const newTotal = s.totalClasses + 1;
-        const newAttended = present ? s.attendedClasses + 1 : s.attendedClasses;
-        return {
-          ...s,
-          totalClasses: newTotal,
-          attendedClasses: newAttended,
-          history: [...(s.history || []), {
-            date: new Date().toISOString().split('T')[0],
-            totalClasses: newTotal,
-            attendedClasses: newAttended
-          }]
-        };
-      }
-      return s;
-    }));
-  };
+        function deleteSubject() {
+            const id = parseInt(document.getElementById('editSubjectId').value);
+            if (confirm('🗑️ Are you sure you want to delete this subject?')) {
+                subjects = subjects.filter(s => s.id !== id);
+                saveSubjects();
+                closeModal('editSubjectModal');
+                updateDashboard();
+                updateSubjectsManagement();
+                updatePredictions();
+                updateAnalytics();
+            }
+        }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-600 p-4">
-      <div className="max-w-7xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden">
-        <div className="bg-gradient-to-r from-green-500 to-green-600 p-8 text-white">
-          <h1 className="text-4xl font-bold mb-2">Smart Attendance Tracker</h1>
-          <p className="text-lg opacity-90">Track, Predict & Maintain Your Academic Attendance</p>
-        </div>
+        function saveSubjects() {
+            localStorage.setItem('subjects', JSON.stringify(subjects));
+        }
 
-        <div className="flex border-b">
-          {['dashboard', 'subjects', 'profile'].map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`flex-1 py-4 px-6 font-semibold capitalize transition-all ${
-                activeTab === tab 
-                  ? 'bg-green-500 text-white' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
+        function clearAddSubjectForm() {
+            document.getElementById('newSubjectName').value = '';
+            document.getElementById('newSubjectCode').value = '';
+            document.getElementById('newTotalClasses').value = 0;
+            document.getElementById('newAttendedClasses').value = 0;
+        }
 
-        <div className="p-6">
-          {activeTab === 'dashboard' && (
-            <div>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                <StatCard title="Overall" value={`${stats.overall.toFixed(1)}%`} color="blue" />
-                <StatCard title="Total Subjects" value={subjects.length} color="purple" />
-                <StatCard title="Safe" value={stats.safe} color="green" />
-                <StatCard title="At Risk" value={stats.risk} color="red" />
-              </div>
+        // --------- IMAGE UPLOAD AND OCR IMPORT ---------
+        function triggerImageUpload() {
+            document.getElementById('subjectImageUpload').click();
+        }
 
-              {subjects.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
-                  <p className="text-xl mb-4">No subjects added yet</p>
-                  <button onClick={() => setActiveTab('subjects')} className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600">
-                    Go to Subjects Tab
-                  </button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {subjects.map(subject => (
-                    <SubjectCard 
-                      key={subject.id} 
-                      subject={subject} 
-                      minAttendance={profile.minAttendance}
-                      onEdit={() => { setEditingSubject(subject); setShowEditModal(true); }}
-                      onDelete={() => deleteSubject(subject.id)}
-                      onMarkAttendance={(present) => markAttendance(subject.id, present)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+        async function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            alert('⏳ Processing image, please wait...');
+            Tesseract.recognize(
+                file,
+                'eng',
+                { logger: m => console.log(m) }
+            ).then(({ data: { text } }) => {
+                importSubjectsFromText(text);
+            }).catch(err => {
+                alert('❌ Failed to process image: ' + err.message);
+            });
+        }
 
-          {activeTab === 'subjects' && (
-            <div>
-              <div className="flex flex-wrap gap-3 mb-6">
-                <button onClick={() => setShowAddModal(true)} className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center gap-2">
-                  <Plus size={20} /> Add Subject
-                </button>
-                <label className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center gap-2 cursor-pointer">
-                  <Upload size={20} /> Import Excel
-                  <input type="file" accept=".xlsx,.xls" onChange={handleExcelImport} className="hidden" />
-                </label>
-                <button onClick={handleExcelExport} className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 flex items-center gap-2">
-                  <Download size={20} /> Export Excel
-                </button>
-              </div>
+        function importSubjectsFromText(text) {
+            // Basic RegEx parsing (customize for your expected image format)
+            const subjectCode = text.match(/Subject\s*Code:\s*(\S+)/i);
+            const subjectName = text.match(/Subject\s*Name:\s*(.+)/i);
+            const attendedClasses = text.match(/Classes\s*Attended:\s*(\d+)/i);
+            const totalClasses = text.match(/Total\s*Classes:\s*(\d+)/i);
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                <h3 className="font-semibold mb-2">Excel Format Guide:</h3>
-                <p className="text-sm text-gray-700">Your Excel can have columns with these names (case-insensitive):</p>
-                <ul className="text-sm text-gray-600 mt-2 space-y-1">
-                  <li>• <strong>Subject/Name:</strong> "Subject", "Subject Name", "Course Name", "Name"</li>
-                  <li>• <strong>Code:</strong> "Code", "Subject Code", "Course Code"</li>
-                  <li>• <strong>Attendance:</strong> "Attended" + "Total" OR "Attended" + "Absent"</li>
-                </ul>
-              </div>
+            if (subjectCode && subjectName && attendedClasses && totalClasses) {
+                const subject = {
+                    id: Date.now(),
+                    name: subjectName[1].trim(),
+                    code: subjectCode[1].trim(),
+                    totalClasses: parseInt(totalClasses[1]),
+                    attendedClasses: parseInt(attendedClasses[1]),
+                    history: [{
+                        date: new Date().toISOString().split('T')[0],
+                        totalClasses: parseInt(totalClasses[1]),
+                        attendedClasses: parseInt(attendedClasses[1])
+                    }]
+                };
+                subjects.push(subject);
+                saveSubjects();
+                updateDashboard();
+                updateSubjectsManagement();
+                updatePredictions();
+                updateAnalytics();
+                checkAttendanceAlerts();
+                alert('✅ Subject imported from image!');
+            } else {
+                alert('⚠️ Could not detect all required fields from image. Text detected:\n' + text);
+            }
+        }
+        // ------------- END IMAGE UPLOAD SECTION -------------
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {subjects.map(subject => (
-                  <SubjectCard 
-                    key={subject.id} 
-                    subject={subject} 
-                    minAttendance={profile.minAttendance}
-                    onEdit={() => { setEditingSubject(subject); setShowEditModal(true); }}
-                    onDelete={() => deleteSubject(subject.id)}
-                    onMarkAttendance={(present) => markAttendance(subject.id, present)}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
+        // Modal Management
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
 
-          {activeTab === 'profile' && (
-            <ProfileForm profile={profile} setProfile={setProfile} />
-          )}
-        </div>
-      </div>
+        // Dashboard Updates
+        function updateDashboard() {
+            updateStats();
+            updateSubjectsOverview();
+        }
 
-      {showAddModal && <SubjectModal onClose={() => setShowAddModal(false)} onSave={addSubject} />}
-      {showEditModal && <SubjectModal subject={editingSubject} onClose={() => { setShowEditModal(false); setEditingSubject(null); }} onSave={updateSubject} />}
-    </div>
-  );
-};
+        function updateStats() {
+            const totalSubjects = subjects.length;
+            const overallAttendance = calculateOverallAttendance();
+            const safeSubjects = subjects.filter(s => calculateAttendancePercentage(s) >= profile.minAttendance).length;
+            const riskSubjects = totalSubjects - safeSubjects;
 
-const StatCard = ({ title, value, color }) => {
-  const colorClasses = {
-    blue: 'bg-blue-50 border-blue-500 text-blue-600',
-    purple: 'bg-purple-50 border-purple-500 text-purple-600',
-    green: 'bg-green-50 border-green-500 text-green-600',
-    red: 'bg-red-50 border-red-500 text-red-600'
-  };
+            document.getElementById('totalSubjects').textContent = totalSubjects;
+            document.getElementById('overallAttendance').textContent = overallAttendance.toFixed(1) + '%';
+            document.getElementById('safeSubjects').textContent = safeSubjects;
+            document.getElementById('riskSubjects').textContent = riskSubjects;
+        }
 
-  return (
-    <div className={`${colorClasses[color].split(' ')[0]} border-l-4 ${colorClasses[color].split(' ')[1]} p-6 rounded-lg`}>
-      <div className={`text-3xl font-bold ${colorClasses[color].split(' ')[2]}`}>{value}</div>
-      <div className="text-gray-600 mt-1">{title}</div>
-    </div>
-  );
-};
+        function updateSubjectsOverview() {
+            const container = document.getElementById('subjectsOverview');
+            container.innerHTML = '';
 
-const SubjectCard = ({ subject, minAttendance, onEdit, onDelete, onMarkAttendance }) => {
-  const percentage = subject.totalClasses > 0 ? (subject.attendedClasses / subject.totalClasses) * 100 : 0;
-  const status = percentage >= minAttendance ? 'safe' : percentage >= minAttendance - 5 ? 'warning' : 'danger';
-  
-  const statusColors = {
-    safe: { bg: 'bg-green-100', text: 'text-green-800', bar: 'bg-green-500' },
-    warning: { bg: 'bg-yellow-100', text: 'text-yellow-800', bar: 'bg-yellow-500' },
-    danger: { bg: 'bg-red-100', text: 'text-red-800', bar: 'bg-red-500' }
-  };
+            subjects.forEach(subject => {
+                const percentage = calculateAttendancePercentage(subject);
+                const status = getAttendanceStatus(percentage);
 
-  const colors = statusColors[status];
+                const card = document.createElement('div');
+                card.className = 'subject-card';
+                card.innerHTML = `
+                    <div class="subject-header">
+                        <div class="subject-name">${subject.name}</div>
+                        <div class="attendance-percentage ${status}">${percentage.toFixed(1)}%</div>
+                    </div>
+                    <div class="progress-bar ${status}">
+                        <div class="progress-fill" style="width: ${Math.min(percentage, 100)}%"></div>
+                    </div>
+                    <p><strong>Code:</strong> ${subject.code}</p>
+                    <p><strong>Attended:</strong> ${subject.attendedClasses} / ${subject.totalClasses} classes</p>
+                `;
+                container.appendChild(card);
+            });
+        }
 
-  return (
-    <div className="bg-gray-50 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex justify-between items-start mb-3">
-        <div>
-          <h3 className="text-xl font-bold text-gray-800">{subject.name}</h3>
-          <p className="text-sm text-gray-600">{subject.code}</p>
-        </div>
-        <div className={`px-4 py-2 rounded-full ${colors.bg} ${colors.text} font-bold`}>
-          {percentage.toFixed(1)}%
-        </div>
-      </div>
+        function updateSubjectsManagement() {
+            const container = document.getElementById('subjectsManagement');
+            container.innerHTML = '';
 
-      <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
-        <div className={`${colors.bar} h-2 rounded-full transition-all`} style={{ width: `${Math.min(percentage, 100)}%` }} />
-      </div>
+            subjects.forEach(subject => {
+                const percentage = calculateAttendancePercentage(subject);
+                const status = getAttendanceStatus(percentage);
 
-      <p className="text-sm text-gray-600 mb-4">
-        Attended: {subject.attendedClasses} / {subject.totalClasses} classes
-      </p>
+                const card = document.createElement('div');
+                card.className = 'subject-card';
+                card.innerHTML = `
+                    <div class="subject-header">
+                        <div class="subject-name">${subject.name}</div>
+                        <div class="attendance-percentage ${status}">${percentage.toFixed(1)}%</div>
+                    </div>
+                    <div class="progress-bar ${status}">
+                        <div class="progress-fill" style="width: ${Math.min(percentage, 100)}%"></div>
+                    </div>
+                    <p><strong>Code:</strong> ${subject.code}</p>
+                    <p><strong>Attended:</strong> ${subject.attendedClasses} / ${subject.totalClasses} classes</p>
+                    <div style="margin-top: 15px;">
+                        <button class="btn" onclick="editSubject(${subject.id})" style="margin-right: 10px;">✏️ Edit</button>
+                        <button class="btn btn-success" onclick="markAttended(${subject.id})">✅ Mark Present</button>
+                        <button class="btn btn-warning" onclick="markAbsent(${subject.id})" style="margin-left: 10px;">❌ Mark Absent</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
 
-      <div className="flex gap-2">
-        <button onClick={() => onMarkAttendance(true)} className="flex-1 px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center justify-center gap-1">
-          <Check size={16} /> Present
-        </button>
-        <button onClick={() => onMarkAttendance(false)} className="flex-1 px-3 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 flex items-center justify-center gap-1">
-          <X size={16} /> Absent
-        </button>
-        <button onClick={onEdit} className="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
-          <Edit2 size={16} />
-        </button>
-        <button onClick={onDelete} className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
-          <Trash2 size={16} />
-        </button>
-      </div>
-    </div>
-  );
-};
+        // Quick Attendance Marking
+        function markAttended(subjectId) {
+            const subjectIndex = subjects.findIndex(s => s.id === subjectId);
+            if (subjectIndex !== -1) {
+                subjects[subjectIndex].totalClasses++;
+                subjects[subjectIndex].attendedClasses++;
 
-const SubjectModal = ({ subject, onClose, onSave }) => {
-  const [formData, setFormData] = useState(subject || {
-    name: '',
-    code: '',
-    totalClasses: 0,
-    attendedClasses: 0
-  });
+                // Add to history
+                subjects[subjectIndex].history.push({
+                    date: new Date().toISOString().split('T')[0],
+                    totalClasses: subjects[subjectIndex].totalClasses,
+                    attendedClasses: subjects[subjectIndex].attendedClasses
+                });
 
-  const handleSubmit = () => {
-    if (!formData.name || !formData.code) {
-      alert('Please fill all required fields');
-      return;
-    }
-    if (formData.attendedClasses > formData.totalClasses) {
-      alert('Attended classes cannot exceed total classes');
-      return;
-    }
-    onSave(formData);
-  };
+                saveSubjects();
+                updateDashboard();
+                updateSubjectsManagement();
+                updatePredictions();
+                updateAnalytics();
+                checkAttendanceAlerts();
+            }
+        }
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-xl p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-2xl font-bold mb-4">{subject ? 'Edit' : 'Add'} Subject</h3>
-        <div className="space-y-4">
-          <input
-            type="text"
-            placeholder="Subject Name *"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-          />
-          <input
-            type="text"
-            placeholder="Subject Code *"
-            value={formData.code}
-            onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-          />
-          <input
-            type="number"
-            placeholder="Total Classes"
-            value={formData.totalClasses}
-            onChange={(e) => setFormData({ ...formData, totalClasses: parseInt(e.target.value) || 0 })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            min="0"
-          />
-          <input
-            type="number"
-            placeholder="Classes Attended"
-            value={formData.attendedClasses}
-            onChange={(e) => setFormData({ ...formData, attendedClasses: parseInt(e.target.value) || 0 })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            min="0"
-          />
-          <div className="flex gap-3">
-            <button onClick={handleSubmit} className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center justify-center gap-2">
-              <Save size={18} /> Save
-            </button>
-            <button onClick={onClose} className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
-              Cancel
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+        function markAbsent(subjectId) {
+            const subjectIndex = subjects.findIndex(s => s.id === subjectId);
+            if (subjectIndex !== -1) {
+                subjects[subjectIndex].totalClasses++;
 
-const ProfileForm = ({ profile, setProfile }) => {
-  const handleSave = () => {
-    alert('Profile saved successfully!');
-  };
+                // Add to history
+                subjects[subjectIndex].history.push({
+                    date: new Date().toISOString().split('T')[0],
+                    totalClasses: subjects[subjectIndex].totalClasses,
+                    attendedClasses: subjects[subjectIndex].attendedClasses
+                });
 
-  return (
-    <div className="max-w-2xl space-y-4">
-      <input
-        type="text"
-        placeholder="Name"
-        value={profile.name}
-        onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-      />
-      <input
-        type="text"
-        placeholder="Roll Number"
-        value={profile.rollNumber}
-        onChange={(e) => setProfile({ ...profile, rollNumber: e.target.value })}
-        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-      />
-      <input
-        type="text"
-        placeholder="Course"
-        value={profile.course}
-        onChange={(e) => setProfile({ ...profile, course: e.target.value })}
-        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-      />
-      <select
-        value={profile.semester}
-        onChange={(e) => setProfile({ ...profile, semester: e.target.value })}
-        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-      >
-        <option value="">Select Semester</option>
-        {[1,2,3,4,5,6,7,8].map(sem => (
-          <option key={sem} value={sem}>{sem} Semester</option>
-        ))}
-      </select>
-      <input
-        type="number"
-        placeholder="Minimum Attendance Required (%)"
-        value={profile.minAttendance}
-        onChange={(e) => setProfile({ ...profile, minAttendance: parseInt(e.target.value) || 75 })}
-        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-        min="0"
-        max="100"
-      />
-      <button onClick={handleSave} className="w-full px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center justify-center gap-2">
-        <Save size={20} /> Save Profile
-      </button>
-    </div>
-  );
-};
+                saveSubjects();
+                updateDashboard();
+                updateSubjectsManagement();
+                updatePredictions();
+                updateAnalytics();
+                checkAttendanceAlerts();
+            }
+        }
 
-export default AttendanceTracker;
+        // Predictions
+        function updatePredictions() {
+            const container = document.getElementById('predictionsContainer');
+            container.innerHTML = '';
+
+            subjects.forEach(subject => {
+                const percentage = calculateAttendancePercentage(subject);
+                const toReach75 = calculateClassesToReach75(subject);
+                const canSkip = calculateCanSkip(subject);
+
+                const predictionCard = document.createElement('div');
+                predictionCard.className = 'subject-card';
+                predictionCard.innerHTML = `
+                    <h4>${subject.name} (${subject.code})</h4>
+                    <p><strong>Current Attendance:</strong> ${percentage.toFixed(1)}%</p>
+                    <div class="prediction-item">
+                        <span>Classes needed to reach ${profile.minAttendance}%:</span>
+                        <strong>${toReach75 >= 0 ? toReach75 : 'Already achieved!'}</strong>
+                    </div>
+                    <div class="prediction-item">
+                        <span>Classes you can skip (staying above ${profile.minAttendance}%):</span>
+                        <strong>${canSkip >= 0 ? canSkip : 'None - Below threshold'}</strong>
+                    </div>
+                `;
+                container.appendChild(predictionCard);
+            });
+        }
+
+        // Analytics
+        let attendanceChart, trendChart;
+
+        function updateAnalytics() {
+            updateAttendanceChart();
+            updateTrendChart();
+        }
+
+        function updateAttendanceChart() {
+            const ctx = document.getElementById('attendanceChart').getContext('2d');
+
+            if (attendanceChart) {
+                attendanceChart.destroy();
+            }
+
+            const data = {
+                labels: subjects.map(s => s.name),
+                datasets: [{
+                    label: 'Attendance Percentage',
+                    data: subjects.map(s => calculateAttendancePercentage(s)),
+                    backgroundColor: subjects.map(s => {
+                        const percentage = calculateAttendancePercentage(s);
+                        if (percentage >= profile.minAttendance) return '#4CAF50';
+                        if (percentage >= profile.minAttendance - 5) return '#FF9800';
+                        return '#F44336';
+                    }),
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            };
+
+            attendanceChart = new Chart(ctx, {
+                type: 'bar',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Subject-wise Attendance Overview'
+                        },
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateTrendChart() {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+
+            if (trendChart) {
+                trendChart.destroy();
+            }
+
+            if (subjects.length === 0) return;
+
+            // Get all unique dates from history
+            const allDates = [...new Set(subjects.flatMap(s => s.history.map(h => h.date)))].sort();
+
+            const datasets = subjects.map((subject, index) => {
+                const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'];
+                return {
+                    label: subject.name,
+                    data: allDates.map(date => {
+                        const historyEntry = subject.history.find(h => h.date === date);
+                        if (historyEntry) {
+                            return historyEntry.totalClasses > 0 ? 
+                                (historyEntry.attendedClasses / historyEntry.totalClasses * 100) : 0;
+                        }
+                        return null;
+                    }),
+                    borderColor: colors[index % colors.length],
+                    backgroundColor: colors[index % colors.length] + '20',
+                    fill: false,
+                    tension: 0.1
+                };
+            });
+
+            trendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: allDates,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Attendance Trend Over Time'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    },
+                    elements: {
+                        point: {
+                            radius: 4
+                        }
+                    }
+                }
+            });
+        }
+
+        // Alerts and Notifications
+        function checkAttendanceAlerts() {
+            const alertsContainer = document.getElementById('alertsContainer');
+            alertsContainer.innerHTML = '';
+
+            const lowAttendanceSubjects = subjects.filter(s => {
+                const percentage = calculateAttendancePercentage(s);
+                return percentage < profile.minAttendance;
+            });
+
+            const criticalSubjects = subjects.filter(s => {
+                const percentage = calculateAttendancePercentage(s);
+                return percentage < profile.minAttendance - 10;
+            });
+
+            if (criticalSubjects.length > 0) {
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-danger';
+                alert.innerHTML = `
+                    <strong>🚨 Critical Alert!</strong> 
+                    ${criticalSubjects.length} subject(s) have very low attendance: 
+                    ${criticalSubjects.map(s => s.name).join(', ')}
+                `;
+                alertsContainer.appendChild(alert);
+            } else if (lowAttendanceSubjects.length > 0) {
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-warning';
+                alert.innerHTML = `
+                    <strong>⚠️ Warning!</strong> 
+                    ${lowAttendanceSubjects.length} subject(s) below ${profile.minAttendance}% attendance: 
+                    ${lowAttendanceSubjects.map(s => s.name).join(', ')}
+                `;
+                alertsContainer.appendChild(alert);
+            } else if (subjects.length > 0) {
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-success';
+                alert.innerHTML = `
+                    <strong>✅ Great Job!</strong> 
+                    All subjects maintain adequate attendance levels!
+                `;
+                alertsContainer.appendChild(alert);
+            }
+        }
+
+        // Utility Functions
+        function calculateAttendancePercentage(subject) {
+            return subject.totalClasses > 0 ? (subject.attendedClasses / subject.totalClasses) * 100 : 0;
+        }
+
+        function calculateOverallAttendance() {
+            if (subjects.length === 0) return 0;
+            const totalClasses = subjects.reduce((sum, s) => sum + s.totalClasses, 0);
+            const totalAttended = subjects.reduce((sum, s) => sum + s.attendedClasses, 0);
+            return totalClasses > 0 ? (totalAttended / totalClasses) * 100 : 0;
+        }
+
+        function getAttendanceStatus(percentage) {
+            if (percentage >= profile.minAttendance) return 'safe';
+            if (percentage >= profile.minAttendance - 5) return 'warning';
+            return 'danger';
+        }
+
+        function calculateClassesToReach75(subject) {
+            // How many next classes must be attended to reach minAttendance%
+            const minPercent = profile.minAttendance;
+            let attended = subject.attendedClasses;
+            let total = subject.totalClasses;
+            if (total === 0) return minPercent === 0 ? 0 : -1;
+            if ((attended / total) * 100 >= minPercent) return 0;
+            let classesNeeded = 0;
+            while (((attended + classesNeeded) / (total + classesNeeded)) * 100 < minPercent) {
+                classesNeeded++;
+                if (classesNeeded > 1000) break;
+            }
+            return classesNeeded;
+        }
+
+        function calculateCanSkip(subject) {
+            // How many classes can be skipped and still remain above minAttendance%
+            const minPercent = profile.minAttendance;
+            let attended = subject.attendedClasses;
+            let total = subject.totalClasses;
+            let canSkip = 0;
+            if (total === 0) return 0;
+            while (((attended) / (total + canSkip + 1)) * 100 >= minPercent) {
+                canSkip++;
+                if (canSkip > 1000) break;
+            }
+            return canSkip;
+        }
+
+        // Export and Clear
+        function exportData() {
+            const data = {
+                subjects,
+                profile
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'attendance_data.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function clearAllData() {
+            if (confirm('🗑️ Are you sure you want to clear all data?')) {
+                subjects = [];
+                profile = {
+                    name: '',
+                    rollNumber: '',
+                    course: '',
+                    semester: '',
+                    minAttendance: 75
+                };
+                localStorage.removeItem('subjects');
+                localStorage.removeItem('profile');
+                loadProfile();
+                updateDashboard();
+                updateSubjectsManagement();
+                updatePredictions();
+                updateAnalytics();
+                checkAttendanceAlerts();
+            }
+        }
+
+    </script>
+</body>
+</html>
