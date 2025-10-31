@@ -26,37 +26,6 @@ A modern, intelligent web application to track, manage, and predict your academi
 - **Charts**: [Recharts](https://recharts.org/)
 - **Icons**: [Lucide React](https://lucide.dev/)
 
-## 🚀 Getting Started
-
-This project is a static web application and does not require a complex build process.
-
-### Prerequisites
-
-- A modern web browser (like Chrome, Firefox, or Edge).
-- A Google Gemini API Key for the "Import from Image" feature to work.
-
-### Running Locally
-
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/your-username/smart-attendance-tracker.git
-   cd smart-attendance-tracker
-   ```
-2. **Set up the API Key:**
-   - To use the image import feature locally, you must provide your Google Gemini API key.
-   - Open the `index.html` file in a text editor.
-   - At the top of the `<head>` section, you will find a `<script>` block labeled "LOCAL DEVELOPMENT CONFIGURATION".
-   - Replace the placeholder `"YOUR_GEMINI_API_KEY_HERE"` with your actual API key.
-   - **Important**: Be careful not to commit the `index.html` file with your API key to a public git repository!
-
-3. **Open the `index.html` file:**
-   - You can now open the `index.html` file directly in your browser.
-   - For the best experience (and to avoid potential issues), it's recommended to serve the directory using a simple local server. If you have Python installed:
-     ```bash
-     # For Python 3
-     python -m http.server
-     ```
-   - Then navigate to `http://localhost:8000` in your browser.
 
 ## 📖 How to Use
 
@@ -69,16 +38,5 @@ This project is a static web application and does not require a complex build pr
 4.  **Update Daily**: On the **Subjects** tab, use the `Present` and `Absent` buttons to quickly mark your attendance for the day.
 5.  **Analyze Trends**: Visit the **Analytics** tab to see a visual comparison of your attendance across all subjects.
 
-## 🌐 Deployment
-
-This is a static single-page application, making it incredibly easy to deploy. You can host it for free on services like:
-
-- [Vercel](https://vercel.com/)
-- [Netlify](https://www.netlify.com/)
-- [GitHub Pages](https://pages.github.com/)
-
-Simply connect your GitHub repository to one of these platforms, and they will automatically build and deploy the site, providing you with a shareable link.
-
-## 📄 License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
