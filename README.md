@@ -38,5 +38,3 @@ A modern, intelligent web application to track, manage, and predict your academi
 4.  **Update Daily**: On the **Subjects** tab, use the `Present` and `Absent` buttons to quickly mark your attendance for the day.
 5.  **Analyze Trends**: Visit the **Analytics** tab to see a visual comparison of your attendance across all subjects.
 
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
