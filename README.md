@@ -2,7 +2,6 @@
 
 A modern, intelligent web application to track, manage, and predict your academic attendance effortlessly. Built with React, TypeScript, and powered by the Google Gemini API for smart data extraction.
 
-![Smart Attendance Tracker Screenshot](https://storage.googleapis.com/aistudio-o-codegen-corp-public-assets/readme-images/attendance-tracker.png)
 
 ## ✨ Core Features
 
