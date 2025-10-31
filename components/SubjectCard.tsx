@@ -43,12 +43,12 @@ const SubjectCard: React.FC<SubjectCardProps> = ({
         onClick={onClick}
     >
       <div>
-        <div className="flex justify-between items-start">
-          <div className="flex-1 pr-4">
-            <p className="text-sm text-text-secondary">{subject.code}</p>
-            <h3 className="text-lg font-bold text-text-primary truncate">{subject.name}</h3>
+        <div className="flex justify-between items-start gap-3">
+          <div className="flex-1 min-w-0 overflow-hidden">
+            <p className="text-sm text-text-secondary truncate">{subject.code}</p>
+            <h3 className="text-lg font-bold text-text-primary break-words line-clamp-2">{subject.name}</h3>
           </div>
-          <div className={`text-xl font-bold ${colors.text}`}>
+          <div className={`text-xl font-bold whitespace-nowrap flex-shrink-0 ${colors.text}`}>
             {percentage.toFixed(1)}%
           </div>
         </div>
