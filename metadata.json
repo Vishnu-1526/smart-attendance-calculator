@@ -1,0 +1,5 @@
+{
+  "name": "Attendance Tracker ",
+  "description": "A modern web application to track, manage, and predict academic attendance. It allows users to manually input subject data or automatically import it by uploading an image of their attendance report, which is processed by the Gemini API.",
+  "requestFramePermissions": []
+}

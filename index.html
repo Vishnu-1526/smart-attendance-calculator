@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Attendance Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      // --- LOCAL DEVELOPMENT CONFIGURATION ---
+      // To run this application locally, you need to set your Google Gemini API key.
+      // 1. Obtain your API key from Google AI Studio: https://aistudio.google.com/app/apikey
+      // 2. Paste your key in the placeholder below.
+      // IMPORTANT: DO NOT commit this file to version control with your API key visible.
+      window.process = window.process || {};
+      window.process.env = window.process.env || {};
+      window.process.env.API_KEY = "YOUR_GEMINI_API_KEY_HERE";
+      // -----------------------------------------
+
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              'brand': {
+                'primary': '#4f46e5',
+                'secondary': '#7c3aed',
+                'light': '#a5b4fc',
+              },
+              'background': '#111827',
+              'surface': '#1f2937',
+              'text-primary': '#f9fafb',
+              'text-secondary': '#9ca3af',
+              'danger': '#ef4444',
+              'warning': '#f97316',
+              'success': '#22c55e',
+            },
+          },
+        },
+      }
+    </script>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.28.0",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.548.0",
+    "recharts": "https://aistudiocdn.com/recharts@^3.3.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-background">
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
